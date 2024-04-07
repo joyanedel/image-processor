@@ -1,3 +1,4 @@
+use image::{io::Reader as ImageReader, DynamicImage};
 use std::{env, fmt::Display, str::FromStr};
 
 use argparse_rs::{ArgParser, ArgType};
@@ -13,11 +14,15 @@ fn main() {
 
     verify_filepath(&absolute_filepath);
 
-    let file_content = open_file(&absolute_filepath);
+    // let file_content = open_file(&absolute_filepath);
 
-    for line in file_content {
-        println!("+ {}", line);
-    }
+    // for line in file_content {
+    //     println!("+ {}", line);
+    // }
+
+    let img = open_image(&absolute_filepath);
+    let img_with_applied_filter = apply_filter(&img, &parsed_arguments.filter);
+    save_img(&img_with_applied_filter, "output.png");
 }
 
 fn configure_parser(parser: &mut ArgParser) {
@@ -66,12 +71,22 @@ fn verify_filepath(filepath: &str) {
     };
 }
 
-fn open_file(filepath: &str) -> Vec<String> {
-    std::fs::read_to_string(&filepath)
-        .unwrap()
-        .lines()
-        .map(String::from)
-        .collect()
+fn open_image(filepath: &str) -> DynamicImage {
+    ImageReader::open(filepath).unwrap().decode().unwrap()
+}
+
+fn apply_filter(img: &DynamicImage, filter: &ImageFilter) -> DynamicImage {
+    return match filter {
+        ImageFilter::GrayScale => img.grayscale(),
+        ImageFilter::Blur => img.blur(10.0),
+    };
+}
+
+fn save_img(img: &DynamicImage, output_path: &str) {
+    match img.save(output_path) {
+        Ok(_) => println!("File saved"),
+        Err(_) => println!("Couldn't save file"),
+    }
 }
 
 #[derive(Debug)]
@@ -83,13 +98,15 @@ struct Args {
 #[derive(Debug)]
 enum ImageFilter {
     GrayScale,
+    Blur,
 }
 
 impl FromStr for ImageFilter {
     type Err = ();
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         return match s {
-            "grayscale" => Ok(ImageFilter::GrayScale),
+            "grayscale" => Ok(Self::GrayScale),
+            "blur" => Ok(Self::Blur),
             _ => Err(()),
         };
     }
@@ -99,6 +116,7 @@ impl Display for ImageFilter {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         return match self {
             ImageFilter::GrayScale => write!(f, "grayscale"),
+            ImageFilter::Blur => write!(f, "blur"),
         };
     }
 }

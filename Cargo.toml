@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 argparse-rs = { git = "https://github.com/joyanedel/argparser-rs", version = "0.1.0" }
+image = "0.25.1"
